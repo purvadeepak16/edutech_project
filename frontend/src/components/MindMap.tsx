@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Palette, X } from 'lucide-react';
+import { Palette, X, Save, FolderOpen, Trash2, Plus } from 'lucide-react';
+import { mindmapApi } from '../services/mindmapApi';
+import { useToast } from '../hooks/use-toast';
 
 interface MindMapNode {
   id: string;
@@ -42,8 +44,15 @@ const MindMap: React.FC = () => {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [draggingNode, setDraggingNode] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [showOpenDialog, setShowOpenDialog] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [mapTitle, setMapTitle] = useState('');
+  const [savedMaps, setSavedMaps] = useState<any[]>([]);
+  const [currentMapId, setCurrentMapId] = useState<string | null>(null);
+  const [currentMapTitle, setCurrentMapTitle] = useState<string>('Untitled');
   const canvasRef = useRef<HTMLDivElement>(null);
   const canvasWrapperRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   // Center view on central topic on mount
   useEffect(() => {
@@ -172,21 +181,138 @@ const MindMap: React.FC = () => {
     setDraggingNode(null);
   };
 
+  // ===== SIMPLIFIED WORKFLOW =====
+  
+  // Create new mind map
+  const handleNew = () => {
+    setNodes([{ id: '1', text: 'Central Topic', x: 600, y: 350, parentId: null, color: '#4A90E2' }]);
+    setSelectedNode('1');
+    setCurrentMapId(null);
+    setCurrentMapTitle('Untitled');
+    setShowColorPicker(false);
+    toast({ title: "New Map", description: "Started with blank canvas" });
+  };
+
+  // Open existing mind maps
+  const loadSavedMaps = async () => {
+    try {
+      const maps = await mindmapApi.getAll();
+      setSavedMaps(maps);
+      setShowOpenDialog(true);
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to load mind maps", variant: "destructive" });
+    }
+  };
+
+  const handleLoad = async (id: string) => {
+    try {
+      const map = await mindmapApi.get(id);
+      setNodes(map.nodes);
+      setCurrentMapId(map._id);
+      setCurrentMapTitle(map.title);
+      setShowOpenDialog(false);
+      toast({ title: "Success", description: `Loaded "${map.title}"` });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to load mind map", variant: "destructive" });
+    }
+  };
+
+  // Create new map from dialog
+  const handleCreateNew = async () => {
+    try {
+      if (!mapTitle.trim()) {
+        toast({ title: "Error", description: "Please enter a title", variant: "destructive" });
+        return;
+      }
+
+      const newMap = await mindmapApi.create(mapTitle, nodes);
+      setCurrentMapId(newMap._id);
+      setCurrentMapTitle(newMap.title);
+      setShowCreateDialog(false);
+      setMapTitle('');
+      toast({ title: "Success", description: "Mind map created and loaded!" });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to create mind map", variant: "destructive" });
+    }
+  };
+
+  // Save changes to current map
+  const handleSaveChanges = async () => {
+    if (!currentMapId) {
+      // If no map loaded, show create dialog
+      setShowCreateDialog(true);
+      return;
+    }
+
+    try {
+      await mindmapApi.update(currentMapId, currentMapTitle, nodes);
+      toast({ title: "Success", description: `Saved changes to "${currentMapTitle}"` });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to save changes", variant: "destructive" });
+    }
+  };
+
+  // Delete a mind map
+  const handleDelete = async (id: string, title: string) => {
+    if (!confirm(`Are you sure you want to delete "${title}"?`)) return;
+    
+    try {
+      await mindmapApi.delete(id);
+      setSavedMaps(savedMaps.filter(m => m._id !== id));
+      
+      if (currentMapId === id) {
+        handleNew();
+      }
+      
+      toast({ title: "Success", description: "Mind map deleted" });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to delete mind map", variant: "destructive" });
+    }
+  };
+
   return (
     <div className="h-full flex flex-col bg-gradient-to-br from-background via-background to-background/95">
-      {/* Single Compact Header */}
-      <div className="flex items-center justify-between px-6 py-2 border-b border-border/20">
-        <h2 className="text-base font-bold text-white">Mind Map</h2>
-        <div className="flex gap-1.5">
+      {/* Simplified Header */}
+      <div className="flex items-center justify-between px-6 py-3 border-b border-border/20">
+        <div className="flex items-center gap-3">
+          <h2 className="text-base font-bold text-white">Mind Map</h2>
+          <span className={`text-xs px-2 py-1 rounded font-medium ${
+            currentMapId 
+              ? 'bg-green-500/20 text-green-400' 
+              : 'bg-amber-500/20 text-amber-400'
+          }`}>
+            {currentMapTitle}
+          </span>
+        </div>
+        <div className="flex gap-2">
           <button 
-            onClick={addNode}
-            className="gradient-btn text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm hover:shadow-md transition-shadow"
+            onClick={handleNew}
+            className="glass text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-white/10 transition-colors flex items-center gap-1.5"
+            title="New blank mind map"
           >
-            + Add
+            <Plus className="w-3.5 h-3.5" />
+            New
+          </button>
+          <button 
+            onClick={loadSavedMaps}
+            className="glass text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-white/10 transition-colors flex items-center gap-1.5"
+            title="Open saved mind maps"
+          >
+            <FolderOpen className="w-3.5 h-3.5" />
+            Open
+          </button>
+          <button 
+            onClick={handleSaveChanges}
+            className="gradient-btn text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm hover:shadow-md transition-shadow flex items-center gap-1.5"
+            title={currentMapId ? 'Save changes to current map' : 'Create and save new map'}
+          >
+            <Save className="w-3.5 h-3.5" />
+            {currentMapId ? 'Save' : 'Save As'}
           </button>
           <button 
             onClick={clearCanvas}
             className="glass text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-white/10 transition-colors"
+            title="Clear canvas"
           >
             Clear
           </button>
@@ -375,6 +501,93 @@ const MindMap: React.FC = () => {
         </div>
         </div>
       </div>
+
+      {/* Create Dialog - for creating new map or saving untitled */}
+      {showCreateDialog && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-background border border-border/20 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+            <h3 className="text-lg font-bold text-white mb-2">Create New Mind Map</h3>
+            <p className="text-xs text-gray-400 mb-4">Give your mind map a name to save it</p>
+            <input
+              type="text"
+              value={mapTitle}
+              onChange={(e) => setMapTitle(e.target.value)}
+              placeholder="e.g. Physics Notes, Project Planning..."
+              className="w-full px-4 py-2 bg-background border border-border/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-soft mb-4"
+              autoFocus
+              onKeyDown={(e) => e.key === 'Enter' && handleCreateNew()}
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={handleCreateNew}
+                className="flex-1 gradient-btn text-white px-4 py-2 rounded-lg text-sm font-semibold"
+              >
+                Create & Save
+              </button>
+              <button
+                onClick={() => {
+                  setShowCreateDialog(false);
+                  setMapTitle('');
+                }}
+                className="flex-1 glass text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-white/10"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Open Dialog - browse and load saved maps */}
+      {showOpenDialog && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-background border border-border/20 rounded-xl p-6 max-w-2xl w-full mx-4 shadow-2xl max-h-[80vh] overflow-hidden flex flex-col">
+            <h3 className="text-lg font-bold text-white mb-4">Open Mind Map</h3>
+            
+            <div className="flex-1 overflow-y-auto space-y-2 mb-4">
+              {savedMaps.length === 0 ? (
+                <p className="text-gray-400 text-center py-8">No saved mind maps yet. Create one first!</p>
+              ) : (
+                savedMaps.map((map) => (
+                  <div
+                    key={map._id}
+                    className="glass rounded-lg p-4 flex items-center justify-between hover:bg-white/10 transition-colors group"
+                  >
+                    <div className="flex-1">
+                      <h4 className="text-white font-semibold">{map.title}</h4>
+                      <p className="text-xs text-gray-400">
+                        Modified {new Date(map.updatedAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleLoad(map._id)}
+                        className="gradient-btn text-white px-4 py-2 rounded-lg text-sm font-semibold"
+                      >
+                        Open
+                      </button>
+                      <button
+                        onClick={() => handleDelete(map._id, map.title)}
+                        className="glass text-red-400 px-3 py-2 rounded-lg hover:bg-red-500/20 transition-colors opacity-0 group-hover:opacity-100"
+                        title="Delete this mind map"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <button
+              onClick={() => setShowOpenDialog(false)}
+              className="glass text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-white/10 w-full"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
