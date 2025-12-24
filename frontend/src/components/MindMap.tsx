@@ -119,7 +119,10 @@ const MindMap: React.FC = () => {
   // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedNode && selectedNode !== '1') {
+      // Don't delete node if user is editing text in an input field
+      const isEditingText = document.activeElement?.tagName === 'INPUT';
+      
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedNode && selectedNode !== '1' && !isEditingText) {
         deleteNode(selectedNode);
       }
     };
