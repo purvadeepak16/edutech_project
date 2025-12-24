@@ -9,6 +9,7 @@ import teacherRoutes from './routes/teachers';
 import studentRoutes from './routes/students';
 import mindmapRoutes from './routes/mindmaps';
 import notificationRoutes from './routes/notifications';
+import studylogsRoutes from './routes/studylogs';
 import { errorHandler } from './middleware/errorHandler';
 import zombieRouter from './routes/zombie';
 import { runTaskChecks } from './utils/taskChecker';
@@ -40,6 +41,7 @@ app.use('/api/teachers', teacherRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/mindmaps', mindmapRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/studylogs', studylogsRoutes);
 app.use('/api/zombie', zombieRouter);
 
 // Error handler

@@ -21,6 +21,8 @@ import MindMap from "@/components/MindMap";
 import ProfileModal from "@/components/ProfileModal";
 
 import NotificationBell from "@/components/NotificationBell";
+import StudyTimer from "@/components/StudyTimer";
+import StudyStats from "@/components/StudyStats";
 
 
 import { getPendingConnections, getAcceptedConnections, respondToTeacherInvite } from "@/services/connectionsApi";
@@ -82,6 +84,8 @@ const StudentDashboard = () => {
   const [showMindMap, setShowMindMap] = useState(false);
   const [showPeaceMode, setShowPeaceMode] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [refreshStudyStats, setRefreshStudyStats] = useState(0);
+  const [currentStreak, setCurrentStreak] = useState(0);
   const [newTask, setNewTask] = useState({
     title: "",
     subject: "",
@@ -677,8 +681,43 @@ const StudentDashboard = () => {
                       <div className="text-xs text-muted-foreground">Take a mindful break</div>
                     </div>
                   </button>
+                  <Link to="/study-logs" className="w-full flex items-center gap-3 p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left">
+                    <div className="w-10 h-10 rounded-xl bg-blue/20 flex items-center justify-center">
+                      <Clock className="w-5 h-5 text-blue" />
+                    </div>
+                    <div>
+                      <div className="font-medium">Study Logs</div>
+                      <div className="text-xs text-muted-foreground">View all sessions</div>
+                    </div>
+                  </Link>
                 </div>
               </div>
+            </motion.div>
+          </div>
+
+          {/* Study Timer & Stats - Better Layout */}
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Timer - Left Side (1 column) */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+              className="lg:col-span-1 max-w-md w-full mx-auto"
+            >
+              <StudyTimer 
+                onSessionComplete={() => setRefreshStudyStats(p => p + 1)} 
+                currentStreak={currentStreak}
+              />
+            </motion.div>
+
+            {/* Stats Cards - Right Side (2 columns) */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="lg:col-span-2"
+            >
+              <StudyStats refreshTrigger={refreshStudyStats} />
             </motion.div>
           </div>
         </div>
