@@ -4,6 +4,8 @@ import { protect } from '../middleware/auth';
 import Task from '../models/Task';
 import TeacherProfile from '../models/TeacherProfile';
 import StudentProfile from '../models/StudentProfile';
+import User from '../models/User';
+import { createNotification, createBulkNotifications } from '../utils/notificationHelper';
 
 const router = express.Router();
 
@@ -35,6 +37,17 @@ router.post(
         // update profiles
         await TeacherProfile.updateOne({ userId: user._id }, { $addToSet: { assignedTasks: task._id } });
         await StudentProfile.updateOne({ userId: studentId }, { $addToSet: { assignedTasks: task._id } });
+
+        // 🔔 NOTIFICATION TRIGGER: Task assigned to student
+        await createNotification({
+          userId: studentId,
+          type: 'task_assigned',
+          title: 'New Task Assigned',
+          message: `${user.name} assigned you: ${title}${dueDate ? ` - Due: ${new Date(dueDate).toLocaleDateString()}` : ''}`,
+          relatedId: task._id,
+          relatedType: 'task',
+          priority: priority === 'high' ? 'high' : 'medium'
+        });
 
         // populate before returning
         const populated = await Task.findById(task._id)
@@ -134,10 +147,31 @@ router.put('/:id', protect, async (req, res) => {
     if (String(task.assignedBy) !== String(user._id) && String(task.assignedTo) !== String(user._id)) {
       return res.status(403).json({ message: 'Forbidden' });
     }
+    
+    // Store previous status to detect completion
+    const previousStatus = task.status;
+    
     // Apply updates
     const updates = req.body;
     Object.assign(task, updates);
     await task.save();
+    
+    // 🔔 NOTIFICATION TRIGGER: Task completed by student
+    if (user.role === 'student' && previousStatus !== 'completed' && task.status === 'completed') {
+      const teacher = await User.findById(task.assignedBy);
+      if (teacher) {
+        await createNotification({
+          userId: task.assignedBy,
+          type: 'task_completed',
+          title: 'Task Completed',
+          message: `${user.name} completed: ${task.title}`,
+          relatedId: task._id,
+          relatedType: 'task',
+          priority: 'low'
+        });
+      }
+    }
+    
     res.json(task);
   } catch (err) {
     res.status(500).json({ message: 'Failed to update task' });

@@ -8,8 +8,10 @@ import connectionRoutes from './routes/connections';
 import teacherRoutes from './routes/teachers';
 import studentRoutes from './routes/students';
 import mindmapRoutes from './routes/mindmaps';
+import notificationRoutes from './routes/notifications';
 import { errorHandler } from './middleware/errorHandler';
 import zombieRouter from './routes/zombie';
+import { runTaskChecks } from './utils/taskChecker';
 
 dotenv.config();
 
@@ -37,6 +39,7 @@ app.use('/api/connections', connectionRoutes);
 app.use('/api/teachers', teacherRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/mindmaps', mindmapRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/zombie', zombieRouter);
 
 // Error handler
@@ -47,6 +50,12 @@ connectDB()
   .then(() => {
     app.listen(PORT, () => {
       console.log(`🚀 Server is running on http://localhost:${PORT}`);
+      
+      // 🔔 Run task checks every hour for due soon/overdue notifications
+      const ONE_HOUR = 60 * 60 * 1000;
+      runTaskChecks(); // Run immediately on startup
+      setInterval(runTaskChecks, ONE_HOUR);
+      console.log('⏰ Task checker scheduled (runs every hour)');
     });
   })
   .catch((err) => {

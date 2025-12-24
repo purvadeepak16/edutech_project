@@ -4,6 +4,8 @@ import { protect, roleCheck } from '../middleware/auth';
 import Connection from '../models/Connection';
 import TeacherProfile from '../models/TeacherProfile';
 import StudentProfile from '../models/StudentProfile';
+import User from '../models/User';
+import { createNotification } from '../utils/notificationHelper';
 
 const router = express.Router();
 
@@ -22,6 +24,18 @@ router.post(
       const existing = await Connection.findOne({ teacher: teacher._id, student: studentId });
       if (existing) return res.status(409).json({ message: 'Invite already exists' });
       const conn = await Connection.create({ teacher: teacher._id, student: studentId, initiatedBy: 'teacher' });
+      
+      // 🔔 NOTIFICATION TRIGGER: Teacher sent invite to student
+      await createNotification({
+        userId: studentId,
+        type: 'connection_request',
+        title: 'New Connection Request',
+        message: `${teacher.name} wants to connect with you`,
+        relatedId: conn._id,
+        relatedType: 'connection',
+        priority: 'medium'
+      });
+      
       res.status(201).json(conn);
     } catch (err) {
       res.status(500).json({ message: 'Failed to send invite' });
@@ -74,6 +88,20 @@ router.patch('/invite/:id/respond', protect, roleCheck(['teacher']), async (req,
           { $addToSet: { connectedTeachers: conn.teacher } }
         )
       ]);
+      
+      // 🔔 NOTIFICATION TRIGGER: Teacher accepted student's connection request
+      const student = await User.findById(conn.student);
+      if (student) {
+        await createNotification({
+          userId: conn.student,
+          type: 'connection_accepted',
+          title: 'Connection Accepted',
+          message: `${user.name} accepted your connection request`,
+          relatedId: conn._id,
+          relatedType: 'connection',
+          priority: 'medium'
+        });
+      }
     }
 
     const populated = await Connection.findById(conn._id)
@@ -131,6 +159,20 @@ router.patch('/student-respond/:id', protect, roleCheck(['student']), async (req
           { $addToSet: { connectedTeachers: conn.teacher } }
         )
       ]);
+      
+      // 🔔 NOTIFICATION TRIGGER: Student accepted teacher's invite
+      const teacher = await User.findById(conn.teacher);
+      if (teacher) {
+        await createNotification({
+          userId: conn.teacher,
+          type: 'student_joined',
+          title: 'Student Joined',
+          message: `${user.name} accepted your connection invite`,
+          relatedId: conn._id,
+          relatedType: 'connection',
+          priority: 'low'
+        });
+      }
     }
 
     const populated = await Connection.findById(conn._id)
@@ -253,6 +295,21 @@ router.post(
 
       const conn = await Connection.create({ teacher: teacherUserId, student: student._id, initiatedBy: 'student' });
       const populated = await Connection.findById(conn._id).populate('teacher', 'name email');
+      
+      // 🔔 NOTIFICATION TRIGGER: Student requested connection to teacher
+      const teacher = await User.findById(teacherUserId);
+      if (teacher) {
+        await createNotification({
+          userId: teacherUserId,
+          type: 'connection_request',
+          title: 'New Connection Request',
+          message: `${student.name} wants to connect with you`,
+          relatedId: conn._id,
+          relatedType: 'connection',
+          priority: 'medium'
+        });
+      }
+      
       res.status(201).json(populated);
     } catch (err) {
       console.error('[connections.request] error:', err);
