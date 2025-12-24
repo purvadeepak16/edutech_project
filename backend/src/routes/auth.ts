@@ -6,6 +6,7 @@ import User from '../models/User';
 import StudentProfile from '../models/StudentProfile';
 import TeacherProfile from '../models/TeacherProfile';
 import { generateUniqueCode } from '../utils/codeGenerator';
+import { protect } from '../middleware/auth';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || '';
@@ -65,5 +66,21 @@ router.post(
     }
   }
 );
+
+// Get current user profile
+router.get('/profile', protect, async (req, res) => {
+  try {
+    const user = (req as any).user;
+    res.json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt,
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch profile' });
+  }
+});
 
 export default router;

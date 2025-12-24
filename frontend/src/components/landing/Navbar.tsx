@@ -21,12 +21,12 @@ const Navbar = () => {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6">
-            <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
+            <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">
               Features
-            </Link>
-            <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
+            </a>
+            <a href="#about" className="text-muted-foreground hover:text-foreground transition-colors">
               About
-            </Link>
+            </a>
             <Link to="/auth" className="text-muted-foreground hover:text-foreground transition-colors">
               Login
             </Link>
@@ -55,12 +55,12 @@ const Navbar = () => {
             className="md:hidden bg-background border-b border-border/50"
           >
             <div className="container mx-auto px-6 py-4 space-y-4">
-              <Link to="/" className="block text-muted-foreground hover:text-foreground transition-colors">
+              <a href="#features" className="block text-muted-foreground hover:text-foreground transition-colors">
                 Features
-              </Link>
-              <Link to="/" className="block text-muted-foreground hover:text-foreground transition-colors">
+              </a>
+              <a href="#about" className="block text-muted-foreground hover:text-foreground transition-colors">
                 About
-              </Link>
+              </a>
               <Link to="/auth" className="block text-muted-foreground hover:text-foreground transition-colors">
                 Login
               </Link>

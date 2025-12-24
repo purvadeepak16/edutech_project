@@ -17,6 +17,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useToast } from "@/hooks/use-toast";
 import { Link, useNavigate } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
+import ProfileModal from "@/components/ProfileModal";
 import { getAcceptedConnections, getPendingConnections, respondToInvite, getAllStudents, sendInvite, type Student as StudentType } from "@/services/connectionsApi";
 import tasksApi from '@/services/tasksApi';
 
@@ -60,6 +61,7 @@ const TeacherDashboard = () => {
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [selectedGroupStudents, setSelectedGroupStudents] = useState<any[]>([]);
   const [selectedGroupTitle, setSelectedGroupTitle] = useState("");
+  const [showProfileModal, setShowProfileModal] = useState(false);
   
   // Search/Invite students state
   const [searchDialogOpen, setSearchDialogOpen] = useState(false);
@@ -374,7 +376,7 @@ const TeacherDashboard = () => {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowProfileModal(true)}>
                     <User className="w-4 h-4 mr-2" /> Profile
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate("/")}>
@@ -964,6 +966,9 @@ const TeacherDashboard = () => {
           </div>
         </div>
       </main>
+
+      {/* Profile Modal */}
+      <ProfileModal open={showProfileModal} onOpenChange={setShowProfileModal} />
     </div>
   );
 };

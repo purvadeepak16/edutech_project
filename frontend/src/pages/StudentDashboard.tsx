@@ -17,6 +17,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useToast } from "@/hooks/use-toast";
 import { Link, useNavigate } from "react-router-dom";
 import MindMap from "@/components/MindMap";
+import ProfileModal from "@/components/ProfileModal";
 
 import { getPendingConnections, getAcceptedConnections, respondToTeacherInvite } from "@/services/connectionsApi";
 
@@ -76,6 +77,7 @@ const StudentDashboard = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [showMindMap, setShowMindMap] = useState(false);
   const [showPeaceMode, setShowPeaceMode] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [newTask, setNewTask] = useState({
     title: "",
     subject: "",
@@ -313,7 +315,7 @@ const StudentDashboard = () => {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowProfileModal(true)}>
                     <User className="w-4 h-4 mr-2" /> Profile
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate("/")}>
@@ -707,6 +709,9 @@ const StudentDashboard = () => {
           <PeaceMode onClose={() => setShowPeaceMode(false)} />
         )}
       </AnimatePresence>
+
+      {/* Profile Modal */}
+      <ProfileModal open={showProfileModal} onOpenChange={setShowProfileModal} />
     </div>
   );
 };

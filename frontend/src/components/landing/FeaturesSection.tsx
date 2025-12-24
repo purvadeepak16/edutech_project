@@ -67,7 +67,7 @@ const item = {
 
 const FeaturesSection = () => {
   return (
-    <section className="py-24 relative">
+    <section id="features" className="py-24 relative scroll-mt-16">
       <div className="container mx-auto px-6">
         {/* Section Header */}
         <motion.div
