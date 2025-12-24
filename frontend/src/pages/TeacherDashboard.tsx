@@ -78,6 +78,7 @@ const TeacherDashboard = () => {
   });
   const [teacherCode, setTeacherCode] = useState("ABC123");
   const [copiedCode, setCopiedCode] = useState(false);
+  const [performance, setPerformance] = useState<{ overallCompletion: number } | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -190,6 +191,8 @@ const TeacherDashboard = () => {
     loadStudents();
     // load teacher tasks
     loadTasks();
+    // load performance metrics
+    loadPerformance();
   }, [toast]);
 
   // load tasks for teacher
@@ -213,6 +216,18 @@ const TeacherDashboard = () => {
       console.error('Failed to load tasks:', err);
     }
   };
+
+  // load performance for teacher
+  async function loadPerformance() {
+    try {
+      const res = await tasksApi.getPerformance();
+      setPerformance({
+        overallCompletion: Number(res.overallCompletion) || 0,
+      });
+    } catch (err: any) {
+      console.error('Failed to load performance:', err);
+    }
+  }
 
   const stats = {
     totalStudents: connectedStudents.length,
@@ -945,16 +960,9 @@ const TeacherDashboard = () => {
                   <div>
                     <div className="flex justify-between text-sm mb-2">
                       <span className="text-muted-foreground">Overall Completion</span>
-                      <span className="font-medium">75%</span>
+                      <span className="font-medium">{performance ? `${performance.overallCompletion}%` : '—'}</span>
                     </div>
-                    <Progress value={75} className="h-2" />
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-sm mb-2">
-                      <span className="text-muted-foreground">On-time Submissions</span>
-                      <span className="font-medium">88%</span>
-                    </div>
-                    <Progress value={88} className="h-2" />
+                    <Progress value={performance ? performance.overallCompletion : 0} className="h-2" />
                   </div>
                 </div>
               </div>
