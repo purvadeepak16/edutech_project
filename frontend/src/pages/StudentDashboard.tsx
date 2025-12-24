@@ -17,7 +17,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useToast } from "@/hooks/use-toast";
 import { Link, useNavigate } from "react-router-dom";
 import MindMap from "@/components/MindMap";
+
 import ProfileModal from "@/components/ProfileModal";
+
+import NotificationBell from "@/components/NotificationBell";
+
 
 import { getPendingConnections, getAcceptedConnections, respondToTeacherInvite } from "@/services/connectionsApi";
 
@@ -302,10 +306,7 @@ const StudentDashboard = () => {
             </Link>
 
             <div className="flex items-center gap-4">
-              <button className="relative p-2 rounded-lg hover:bg-muted transition-colors">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-pink rounded-full" />
-              </button>
+              <NotificationBell />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted transition-colors">

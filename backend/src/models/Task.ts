@@ -8,6 +8,7 @@ export interface ITask extends Document {
   status: 'pending' | 'completed';
   assignedBy: mongoose.Types.ObjectId;
   assignedTo: mongoose.Types.ObjectId;
+  completedAt?: Date;
   createdAt: Date;
 }
 
@@ -19,6 +20,7 @@ const TaskSchema = new Schema<ITask>({
   status: { type: String, enum: ['pending', 'completed'], default: 'pending' },
   assignedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   assignedTo: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  completedAt: { type: Date },
   createdAt: { type: Date, default: Date.now }
 });
 

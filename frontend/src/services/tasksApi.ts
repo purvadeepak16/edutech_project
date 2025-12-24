@@ -54,4 +54,16 @@ export const getTasks = async (page = 1, limit = 50) => {
   return res.json();
 };
 
-export default { assignTasks, updateTask, getTasks };
+export const getPerformance = async () => {
+  const token = localStorage.getItem('sc_token');
+  const res = await fetch(`${API_BASE}/tasks/performance`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Failed to fetch performance');
+  }
+  return res.json();
+};
+
+export default { assignTasks, updateTask, getTasks, getPerformance };
