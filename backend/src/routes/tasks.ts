@@ -200,16 +200,12 @@ router.get('/performance', protect, async (req, res) => {
 
     const total = tasks.length;
     const completed = tasks.filter(t => t.status === 'completed').length;
-    const withDueDateCompleted = tasks.filter(t => t.status === 'completed' && t.dueDate).length;
-    const onTime = tasks.filter(t => t.status === 'completed' && t.dueDate && t.completedAt && (new Date(t.completedAt).getTime() <= new Date(t.dueDate!).getTime())).length;
 
     const overallCompletion = total ? Math.round((completed / total) * 100) : 0;
-    const onTimeSubmissions = withDueDateCompleted ? Math.round((onTime / withDueDateCompleted) * 100) : 0;
 
     res.json({
       overallCompletion,
-      onTimeSubmissions,
-      totals: { total, completed, withDueDateCompleted, onTime }
+      totals: { total, completed }
     });
   } catch (err) {
     console.error('Performance fetch error:', err);

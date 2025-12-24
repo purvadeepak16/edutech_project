@@ -294,6 +294,15 @@ const MindMap: React.FC = () => {
             New
           </button>
           <button 
+            onClick={addNode}
+            disabled={!selectedNode}
+            className="glass text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-white/10 transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            title={selectedNode ? "Add child node to selected node (or press Ctrl+N)" : "Select a node first"}
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add Node
+          </button>
+          <button 
             onClick={loadSavedMaps}
             className="glass text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-white/10 transition-colors flex items-center gap-1.5"
             title="Open saved mind maps"
