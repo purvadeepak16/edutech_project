@@ -339,6 +339,11 @@ const StudentDashboard = () => {
           >
             <h1 className="font-heading text-3xl font-bold mb-2">Welcome back, Student! 👋</h1>
             <p className="text-muted-foreground">Here's your study progress overview</p>
+            <div className="flex gap-3 mt-3">
+              <Button className="btn-gradient-blue gap-2" onClick={() => navigate('/student/quizzes')}>
+                Go to quizzes
+              </Button>
+            </div>
           </motion.div>
 
           {/* Stats Cards */}

@@ -11,6 +11,7 @@ import mindmapRoutes from './routes/mindmaps';
 import notificationRoutes from './routes/notifications';
 import { errorHandler } from './middleware/errorHandler';
 import zombieRouter from './routes/zombie';
+import quizRoutes from './routes/quizzes';
 import { runTaskChecks } from './utils/taskChecker';
 
 dotenv.config();
@@ -41,6 +42,7 @@ app.use('/api/students', studentRoutes);
 app.use('/api/mindmaps', mindmapRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/zombie', zombieRouter);
+app.use('/api/quizzes', quizRoutes);
 
 // Error handler
 app.use(errorHandler);

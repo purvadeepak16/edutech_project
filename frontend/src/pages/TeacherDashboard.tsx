@@ -554,103 +554,108 @@ const TeacherDashboard = () => {
                       <TabsTrigger value="students">My Students</TabsTrigger>
                       <TabsTrigger value="tasks">Assigned Tasks</TabsTrigger>
                     </TabsList>
-                    <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button className="btn-gradient-blue gap-2">
-                          <Send className="w-4 h-4" /> Assign Task
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="glass-card border-border/50 max-w-lg">
-                        <DialogHeader>
-                          <DialogTitle>Assign New Task</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4 mt-4">
-                          <div className="space-y-2">
-                            <Label>Task Title</Label>
-                            <Input
-                              placeholder="Enter task title"
-                              value={newTask.title}
-                              onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Subject</Label>
-                            <Input
-                              placeholder="e.g., Physics"
-                              value={newTask.subject}
-                              onChange={(e) => setNewTask({ ...newTask, subject: e.target.value })}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Description</Label>
-                            <Textarea
-                              placeholder="Task details..."
-                              value={newTask.description}
-                              onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                            />
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center gap-3">
+                      <Button className="btn-gradient-blue gap-2" onClick={() => navigate('/teacher/quizzes')}>
+                        <ClipboardList className="w-4 h-4" /> Manage Quizzes
+                      </Button>
+                      <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button className="btn-gradient-blue gap-2">
+                            <Send className="w-4 h-4" /> Assign Task
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="glass-card border-border/50 max-w-lg">
+                          <DialogHeader>
+                            <DialogTitle>Assign New Task</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4 mt-4">
                             <div className="space-y-2">
-                              <Label>Due Date</Label>
+                              <Label>Task Title</Label>
                               <Input
-                                type="date"
-                                value={newTask.dueDate}
-                                onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
+                                placeholder="Enter task title"
+                                value={newTask.title}
+                                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label>Priority</Label>
-                              <Select
-                                value={newTask.priority}
-                                onValueChange={(v) => setNewTask({ ...newTask, priority: v as "high" | "medium" | "low" })}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="high">High</SelectItem>
-                                  <SelectItem value="medium">Medium</SelectItem>
-                                  <SelectItem value="low">Low</SelectItem>
-                                </SelectContent>
-                              </Select>
+                              <Label>Subject</Label>
+                              <Input
+                                placeholder="e.g., Physics"
+                                value={newTask.subject}
+                                onChange={(e) => setNewTask({ ...newTask, subject: e.target.value })}
+                              />
                             </div>
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Select Students</Label>
-                            <div className="space-y-2 max-h-40 overflow-y-auto">
-                              {loadingStudents ? (
-                                <p className="text-sm text-muted-foreground">Loading students...</p>
-                              ) : connectedStudents.length === 0 ? (
-                                <p className="text-sm text-muted-foreground">No connected students yet</p>
-                              ) : (
-                                connectedStudents.map((connection: any) => (
-                                  <label
-                                    key={connection.student._id}
-                                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                                      selectedStudents.includes(connection.student._id)
-                                        ? "bg-primary/10 border-primary/50"
-                                        : "border-border/50 hover:border-primary/30"
-                                    }`}
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedStudents.includes(connection.student._id)}
-                                      onChange={() => toggleStudentSelection(connection.student._id)}
-                                      className="w-4 h-4 rounded border-muted-foreground text-primary focus:ring-primary"
-                                    />
-                                    <span className="font-medium">{connection.student.name}</span>
-                                    <span className="text-sm text-muted-foreground ml-auto">{connection.student.email}</span>
-                                  </label>
-                                ))
-                              )}
+                            <div className="space-y-2">
+                              <Label>Description</Label>
+                              <Textarea
+                                placeholder="Task details..."
+                                value={newTask.description}
+                                onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                              />
                             </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label>Due Date</Label>
+                                <Input
+                                  type="date"
+                                  value={newTask.dueDate}
+                                  onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Priority</Label>
+                                <Select
+                                  value={newTask.priority}
+                                  onValueChange={(v) => setNewTask({ ...newTask, priority: v as "high" | "medium" | "low" })}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="high">High</SelectItem>
+                                    <SelectItem value="medium">Medium</SelectItem>
+                                    <SelectItem value="low">Low</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Select Students</Label>
+                              <div className="space-y-2 max-h-40 overflow-y-auto">
+                                {loadingStudents ? (
+                                  <p className="text-sm text-muted-foreground">Loading students...</p>
+                                ) : connectedStudents.length === 0 ? (
+                                  <p className="text-sm text-muted-foreground">No connected students yet</p>
+                                ) : (
+                                  connectedStudents.map((connection: any) => (
+                                    <label
+                                      key={connection.student._id}
+                                      className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                                        selectedStudents.includes(connection.student._id)
+                                          ? "bg-primary/10 border-primary/50"
+                                          : "border-border/50 hover:border-primary/30"
+                                      }`}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedStudents.includes(connection.student._id)}
+                                        onChange={() => toggleStudentSelection(connection.student._id)}
+                                        className="w-4 h-4 rounded border-muted-foreground text-primary focus:ring-primary"
+                                      />
+                                      <span className="font-medium">{connection.student.name}</span>
+                                      <span className="text-sm text-muted-foreground ml-auto">{connection.student.email}</span>
+                                    </label>
+                                  ))
+                                )}
+                              </div>
+                            </div>
+                            <Button onClick={handleAssignTask} className="w-full btn-gradient-blue">
+                              Assign Task
+                            </Button>
                           </div>
-                          <Button onClick={handleAssignTask} className="w-full btn-gradient-blue">
-                            Assign Task
-                          </Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
                   </div>
 
                   <TabsContent value="students" className="space-y-3">

@@ -7,6 +7,8 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import StudentDashboard from "./pages/StudentDashboard";
 import TeacherDashboard from "./pages/TeacherDashboard";
+import StudentQuizzes from "./pages/StudentQuizzes";
+import TeacherQuizzes from "./pages/TeacherQuizzes";
 import ZombieGame from "./pages/ZombieGame"; 
 import NotFound from "./pages/NotFound";
 
@@ -22,7 +24,9 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/student" element={<StudentDashboard />} />
+          <Route path="/student/quizzes" element={<StudentQuizzes />} />
           <Route path="/teacher" element={<TeacherDashboard />} />
+          <Route path="/teacher/quizzes" element={<TeacherQuizzes />} />
           <Route path="/zombie" element={<ZombieGame />} /> 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
