@@ -4,7 +4,7 @@ import {
   ClipboardList, CheckCircle2, Clock, TrendingUp, Plus, 
   Calendar, Brain, Gamepad2, Link2, Bell, User, LogOut,
   MoreVertical, Trash2, Edit2, GraduationCap, Users, X,
-  Check, AlertCircle, Loader2, Sparkles
+  Check, AlertCircle, Loader2, Sparkles, Search, UserPlus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -25,7 +25,7 @@ import StudyTimer from "@/components/StudyTimer";
 import StudyStats from "@/components/StudyStats";
 
 
-import { getPendingConnections, getAcceptedConnections, respondToTeacherInvite } from "@/services/connectionsApi";
+import { getPendingConnections, getAcceptedConnections, respondToTeacherInvite, requestConnection } from "@/services/connectionsApi";
 
 import PeaceMode from "@/components/PeaceMode";
 
@@ -97,7 +97,10 @@ const StudentDashboard = () => {
   const navigate = useNavigate();
   const [teacherCode, setTeacherCode] = useState("");
   const [availableTeachers, setAvailableTeachers] = useState<any[]>([]);
-  const [teacherSearch, setTeacherSearch] = useState('');
+  const [teacherSearchTerm, setTeacherSearchTerm] = useState('');
+  const [teacherSearchOpen, setTeacherSearchOpen] = useState(false);
+  const [teacherResults, setTeacherResults] = useState<any[]>([]);
+  const [searchingTeachers, setSearchingTeachers] = useState(false);
   const [connectingTo, setConnectingTo] = useState<Set<string>>(new Set());
   
   // Connection state
@@ -182,6 +185,14 @@ const StudentDashboard = () => {
     loadConnections();
   }, []);
 
+  // Seed teacher search results when modal opens or teacher list refreshes
+  useEffect(() => {
+    if (teacherSearchOpen) {
+      setTeacherResults(availableTeachers);
+      setTeacherSearchTerm('');
+    }
+  }, [teacherSearchOpen, availableTeachers]);
+
   // Handle teacher invite response
   const handleRespondToInvite = async (connectionId: string, action: 'accept' | 'reject') => {
     setRespondingToConnection(prev => new Set(prev).add(connectionId));
@@ -209,6 +220,56 @@ const StudentDashboard = () => {
       setRespondingToConnection(prev => {
         const next = new Set(prev);
         next.delete(connectionId);
+        return next;
+      });
+    }
+  };
+
+  const handleSearchTeachers = async () => {
+    setSearchingTeachers(true);
+    try {
+      const token = localStorage.getItem('sc_token');
+      const params = new URLSearchParams();
+      const query = teacherSearchTerm.trim();
+      if (query) params.append('search', query);
+
+      const res = await fetch(`/api/teachers${params.toString() ? `?${params}` : ''}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.message || 'Failed to search teachers');
+
+      const list = Array.isArray(data) ? data : (data.teachers || data.results || []);
+      setTeacherResults(list);
+    } catch (err: any) {
+      toast({ title: 'Search failed', description: err?.message || 'Unable to search teachers', variant: 'destructive' });
+      setTeacherResults([]);
+    } finally {
+      setSearchingTeachers(false);
+    }
+  };
+
+  const sendConnectionRequest = async (identifier: string) => {
+    const code = identifier?.trim();
+    if (!code) {
+      toast({ title: 'Enter code', description: 'Please enter a teacher code or ID.', variant: 'destructive' });
+      return;
+    }
+    const key = String(code);
+    setConnectingTo(prev => new Set(prev).add(key));
+    try {
+      await requestConnection(code);
+      toast({ title: 'Request sent', description: 'Connection request sent to teacher.' });
+      setTeacherCode('');
+      const [pending, accepted] = await Promise.all([getPendingConnections(), getAcceptedConnections()]);
+      setPendingConnections(pending);
+      setAcceptedConnections(accepted);
+    } catch (err: any) {
+      toast({ title: 'Error', description: err?.message || 'Failed to send request', variant: 'destructive' });
+    } finally {
+      setConnectingTo(prev => {
+        const next = new Set(prev);
+        next.delete(key);
         return next;
       });
     }
@@ -360,10 +421,98 @@ const StudentDashboard = () => {
           >
             <h1 className="font-heading text-3xl font-bold mb-2">Welcome back, Student! 👋</h1>
             <p className="text-muted-foreground">Here's your study progress overview</p>
-            <div className="flex gap-3 mt-3">
+            <div className="flex flex-wrap gap-3 mt-3">
               <Button className="btn-gradient-blue gap-2" onClick={() => navigate('/student/quizzes')}>
                 Go to quizzes
               </Button>
+              <Dialog open={teacherSearchOpen} onOpenChange={setTeacherSearchOpen}>
+                <DialogTrigger asChild>
+                  <Button className="btn-gradient-blue gap-2">
+                    <UserPlus className="w-4 h-4" /> Search & Connect Teacher
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="glass-card border-border/50 max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Search & Connect Teacher</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 mt-4">
+                    <p className="text-sm text-muted-foreground">Search by name, email, or code, then send a connection request.</p>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search teachers..."
+                          value={teacherSearchTerm}
+                          onChange={(e) => setTeacherSearchTerm(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSearchTeachers()}
+                          className="pl-9"
+                        />
+                      </div>
+                      <Button onClick={handleSearchTeachers} disabled={searchingTeachers}>
+                        {searchingTeachers ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Search'}
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                      {searchingTeachers ? (
+                        <div className="flex items-center justify-center py-8">
+                          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                        </div>
+                      ) : teacherResults.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                          <p>No teachers found</p>
+                          <p className="text-sm mt-1">Try a different search term or ask for their code.</p>
+                        </div>
+                      ) : (
+                        teacherResults.map((t) => {
+                          const teacherId = String((t.userId && (t.userId._id || t.userId.id)) || t._id || t.id || t.code);
+                          const teacherCode = t.code || teacherId;
+                          const isConnected = acceptedConnections.some((c) => String(c.teacher?._id) === teacherId);
+                          const isPending = pendingConnections.some((c) => String(c.teacher?._id) === teacherId);
+                          const isConnecting = connectingTo.has(teacherCode) || connectingTo.has(teacherId);
+                          const name = (t.userId && (t.userId.name || t.userId.email)) || t.name || 'Teacher';
+                          const email = (t.userId && t.userId.email) || t.email || '';
+
+                          return (
+                            <div
+                              key={teacherId}
+                              className="flex items-center justify-between p-4 rounded-xl bg-card/50 border border-border/50"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                                  <User className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                  <p className="font-medium">{name}</p>
+                                  <p className="text-sm text-muted-foreground">{email || 'No email provided'}</p>
+                                  <p className="text-xs text-muted-foreground">Code: <span className="font-mono">{teacherCode}</span></p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {isConnected ? (
+                                  <span className="text-success text-sm font-medium flex items-center gap-1"><Check className="w-4 h-4" /> Connected</span>
+                                ) : isPending ? (
+                                  <span className="text-warning text-sm font-medium flex items-center gap-1"><Clock className="w-4 h-4" /> Pending</span>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    className="btn-gradient-blue"
+                                    disabled={isConnecting}
+                                    onClick={() => sendConnectionRequest(teacherCode)}
+                                  >
+                                    {isConnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Connect'}
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </motion.div>
 
@@ -715,106 +864,6 @@ const StudentDashboard = () => {
                 </div>
               </div>
 
-              {/* Find Teachers (available codes) - placed below Connected Teachers */}
-              {availableTeachers.length > 0 && (
-                <div className="glass-card p-6 rounded-2xl">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center">
-                      <Link2 className="w-5 h-5 text-accent" />
-                    </div>
-                    <h3 className="font-heading font-semibold">Find Teachers</h3>
-                    <span className="ml-auto text-xs bg-muted/20 text-muted-foreground px-2 py-1 rounded-full font-semibold">{availableTeachers.length}</span>
-                  </div>
-
-                  <p className="text-sm text-muted-foreground mb-3">Search teachers by name, email or code, then paste or connect directly.</p>
-
-                  <div className="flex gap-2 mb-3">
-                    <Input
-                      placeholder="Search teachers..."
-                      value={teacherSearch}
-                      onChange={(e) => setTeacherSearch(e.target.value)}
-                    />
-                    <Button
-                      onClick={() => setTeacherSearch('')}
-                      variant="outline"
-                    >
-                      Clear
-                    </Button>
-                  </div>
-
-                  <div className="space-y-2 max-h-56 overflow-auto">
-                    {availableTeachers
-                      .filter((t) => {
-                        const q = teacherSearch.trim().toLowerCase();
-                        if (!q) return true;
-                        const name = (t.userId && (t.userId.name || t.userId.email)) || (t.userId && t.userId.name) || '';
-                        return (
-                          (name || '').toLowerCase().includes(q) ||
-                          (t.code || '').toLowerCase().includes(q) ||
-                          (t.userId && t.userId.email && t.userId.email.toLowerCase().includes(q))
-                        );
-                      })
-                      .map((t) => {
-                        const key = t.id || t._id || t.code;
-                        const isConnecting = connectingTo.has(String(key));
-                        return (
-                          <div key={key} className="flex items-center justify-between p-3 rounded-lg bg-card/30 border border-border/30">
-                            <div>
-                              <div className="font-medium text-sm">{(t.userId && (t.userId.name || t.userId.email)) || 'Teacher'}</div>
-                              <div className="text-xs text-muted-foreground">Code: <span className="font-mono">{t.code}</span></div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Button size="sm" onClick={() => { setTeacherCode(t.code); toast({ title: 'Code inserted', description: 'Teacher code inserted into the input' }); }}>
-                                Paste
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={async () => {
-                                  // connect to this teacher using their code
-                                  try {
-                                    setConnectingTo(prev => new Set(prev).add(String(key)));
-                                    const token = localStorage.getItem('sc_token');
-                                    const res = await fetch('/api/connections/request', {
-                                      method: 'POST',
-                                      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-                                      body: JSON.stringify({ teacherId: t.code }),
-                                    });
-                                    const data = await res.json().catch(() => ({}));
-                                    if (!res.ok) {
-                                      throw new Error(data?.message || 'Failed to send request');
-                                    }
-                                    toast({ title: 'Request sent', description: `Connection request sent to ${t.code}` });
-
-                                    // refresh connection lists
-                                    try {
-                                      const [pending, accepted] = await Promise.all([getPendingConnections(), getAcceptedConnections()]);
-                                      setPendingConnections(pending);
-                                      setAcceptedConnections(accepted);
-                                    } catch (err) {
-                                      console.error('Failed to refresh connections', err);
-                                    }
-                                  } catch (err: any) {
-                                    toast({ title: 'Error', description: err?.message || 'Failed to send request', variant: 'destructive' });
-                                  } finally {
-                                    setConnectingTo(prev => {
-                                      const next = new Set(prev);
-                                      next.delete(String(key));
-                                      return next;
-                                    });
-                                  }
-                                }}
-                                disabled={isConnecting}
-                              >
-                                {isConnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Connect'}
-                              </Button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                  </div>
-                </div>
-              )}
             </motion.div>
           </div>
 
