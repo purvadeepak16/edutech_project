@@ -96,6 +96,9 @@ const StudentDashboard = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [teacherCode, setTeacherCode] = useState("");
+  const [availableTeachers, setAvailableTeachers] = useState<any[]>([]);
+  const [teacherSearch, setTeacherSearch] = useState('');
+  const [connectingTo, setConnectingTo] = useState<Set<string>>(new Set());
   
   // Connection state
   const [pendingConnections, setPendingConnections] = useState<any[]>([]);
@@ -156,6 +159,19 @@ const StudentDashboard = () => {
         
         setPendingConnections(pending);
         setAcceptedConnections(accepted);
+        // fetch available teachers and their codes so students can copy them
+        try {
+          const tRes = await fetch('/api/teachers', {
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          });
+          if (tRes.ok) {
+            const tData = await tRes.json();
+            setAvailableTeachers(tData || []);
+          }
+        } catch (err) {
+          // non-fatal
+          console.error('Failed to fetch available teachers:', err);
+        }
       } catch (err: any) {
         console.error('Failed to load connections:', err);
       } finally {
@@ -329,6 +345,7 @@ const StudentDashboard = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+                {/* availableTeachers list removed from nav - rendered in sidebar below Connected Teachers */}
           </div>
         </div>
       </nav>
@@ -692,6 +709,107 @@ const StudentDashboard = () => {
                   </Link>
                 </div>
               </div>
+
+              {/* Find Teachers (available codes) - placed below Connected Teachers */}
+              {availableTeachers.length > 0 && (
+                <div className="glass-card p-6 rounded-2xl">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center">
+                      <Link2 className="w-5 h-5 text-accent" />
+                    </div>
+                    <h3 className="font-heading font-semibold">Find Teachers</h3>
+                    <span className="ml-auto text-xs bg-muted/20 text-muted-foreground px-2 py-1 rounded-full font-semibold">{availableTeachers.length}</span>
+                  </div>
+
+                  <p className="text-sm text-muted-foreground mb-3">Search teachers by name, email or code, then paste or connect directly.</p>
+
+                  <div className="flex gap-2 mb-3">
+                    <Input
+                      placeholder="Search teachers..."
+                      value={teacherSearch}
+                      onChange={(e) => setTeacherSearch(e.target.value)}
+                    />
+                    <Button
+                      onClick={() => setTeacherSearch('')}
+                      variant="outline"
+                    >
+                      Clear
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2 max-h-56 overflow-auto">
+                    {availableTeachers
+                      .filter((t) => {
+                        const q = teacherSearch.trim().toLowerCase();
+                        if (!q) return true;
+                        const name = (t.userId && (t.userId.name || t.userId.email)) || (t.userId && t.userId.name) || '';
+                        return (
+                          (name || '').toLowerCase().includes(q) ||
+                          (t.code || '').toLowerCase().includes(q) ||
+                          (t.userId && t.userId.email && t.userId.email.toLowerCase().includes(q))
+                        );
+                      })
+                      .map((t) => {
+                        const key = t.id || t._id || t.code;
+                        const isConnecting = connectingTo.has(String(key));
+                        return (
+                          <div key={key} className="flex items-center justify-between p-3 rounded-lg bg-card/30 border border-border/30">
+                            <div>
+                              <div className="font-medium text-sm">{(t.userId && (t.userId.name || t.userId.email)) || 'Teacher'}</div>
+                              <div className="text-xs text-muted-foreground">Code: <span className="font-mono">{t.code}</span></div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button size="sm" onClick={() => { setTeacherCode(t.code); toast({ title: 'Code inserted', description: 'Teacher code inserted into the input' }); }}>
+                                Paste
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={async () => {
+                                  // connect to this teacher using their code
+                                  try {
+                                    setConnectingTo(prev => new Set(prev).add(String(key)));
+                                    const token = localStorage.getItem('sc_token');
+                                    const res = await fetch('/api/connections/request', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+                                      body: JSON.stringify({ teacherId: t.code }),
+                                    });
+                                    const data = await res.json().catch(() => ({}));
+                                    if (!res.ok) {
+                                      throw new Error(data?.message || 'Failed to send request');
+                                    }
+                                    toast({ title: 'Request sent', description: `Connection request sent to ${t.code}` });
+
+                                    // refresh connection lists
+                                    try {
+                                      const [pending, accepted] = await Promise.all([getPendingConnections(), getAcceptedConnections()]);
+                                      setPendingConnections(pending);
+                                      setAcceptedConnections(accepted);
+                                    } catch (err) {
+                                      console.error('Failed to refresh connections', err);
+                                    }
+                                  } catch (err: any) {
+                                    toast({ title: 'Error', description: err?.message || 'Failed to send request', variant: 'destructive' });
+                                  } finally {
+                                    setConnectingTo(prev => {
+                                      const next = new Set(prev);
+                                      next.delete(String(key));
+                                      return next;
+                                    });
+                                  }
+                                }}
+                                disabled={isConnecting}
+                              >
+                                {isConnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Connect'}
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
             </motion.div>
           </div>
 
