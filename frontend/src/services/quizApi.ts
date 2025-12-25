@@ -4,6 +4,7 @@ export interface QuizQuestion {
   prompt: string;
   options: string[];
   correctIndex?: number;
+  marks?: number;
 }
 
 export interface QuizPayload {

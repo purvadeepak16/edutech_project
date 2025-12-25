@@ -14,13 +14,15 @@ interface AssignedQuiz {
   title: string;
   description?: string;
   timeLimitSeconds: number;
-  questions: { prompt: string; options: string[]; correctIndex?: number }[];
+  questions: { prompt: string; options: string[]; correctIndex?: number; marks?: number }[];
   attempted: boolean;
   score?: number;
   correctAnswers?: number[];
   answers?: number[];
   correctCount?: number;
   totalQuestions: number;
+  totalMarks?: number;
+  earnedMarks?: number;
 }
 
 const StudentQuizzes = () => {
@@ -72,8 +74,8 @@ const StudentQuizzes = () => {
     try {
       const filled = answers.some((a) => a === -1) ? answers.map((a) => (a === -1 ? -1 : a)) : answers;
       const res = await quizApi.submitQuiz(activeQuiz._id, filled as number[], (activeQuiz.timeLimitSeconds || 300) - (timeLeft || 0));
-      setQuizzes((prev) => prev.map((q) => (q._id === activeQuiz._id ? { ...q, attempted: true, score: res.score, correctAnswers: res.correctAnswers, answers: res.answers, correctCount: res.correctCount } : q)));
-      toast({ title: "Submitted", description: `Score: ${res.score}%` });
+      setQuizzes((prev) => prev.map((q) => (q._id === activeQuiz._id ? { ...q, attempted: true, score: res.score, correctAnswers: res.correctAnswers, answers: res.answers, correctCount: res.correctCount, earnedMarks: res.earnedMarks, totalMarks: res.totalMarks } : q)));
+      toast({ title: "Submitted", description: `Score: ${res.score}% (${res.earnedMarks}/${res.totalMarks} marks)` });
     } catch (err: any) {
       toast({ title: "Submit failed", description: err.message || "", variant: "destructive" });
     } finally {
@@ -115,7 +117,7 @@ const StudentQuizzes = () => {
                 <div>
                   <CardTitle className="text-lg">{quiz.title}</CardTitle>
                   <p className="text-muted-foreground text-sm">{quiz.description || 'MCQ quiz'}</p>
-                  <div className="text-xs text-muted-foreground mt-1">{quiz.questions.length} questions · {quiz.timeLimitSeconds}s limit</div>
+                  <div className="text-xs text-muted-foreground mt-1">{quiz.questions.length} questions · {quiz.timeLimitSeconds}s limit · {(quiz.totalMarks ?? quiz.questions.reduce((sum, q) => sum + (q.marks ?? 1), 0))} marks</div>
                 </div>
                 <Badge variant={quiz.attempted ? "secondary" : "outline"}>{quiz.attempted ? "Submitted" : "Pending"}</Badge>
               </CardHeader>
@@ -125,7 +127,7 @@ const StudentQuizzes = () => {
                 )}
                 {quiz.attempted && (
                   <div className="space-y-2">
-                    <div className="text-sm text-muted-foreground">Score: {quiz.score}% ({quiz.correctCount}/{quiz.totalQuestions})</div>
+                    <div className="text-sm text-muted-foreground">Score: {quiz.score}% ({quiz.earnedMarks ?? quiz.correctCount}/{quiz.totalMarks ?? quiz.totalQuestions} marks)</div>
                     <div className="space-y-1 text-sm">
                       {quiz.questions.map((q, idx) => {
                         const correctIdx = quiz.correctAnswers ? quiz.correctAnswers[idx] : -1;
@@ -133,7 +135,10 @@ const StudentQuizzes = () => {
                         const isCorrect = correctIdx === studentAnswer;
                         return (
                           <div key={idx} className={`p-2 rounded-lg border ${isCorrect ? 'border-success/60 bg-success/10' : 'border-border/60'}`}>
-                            <div className="font-medium">Q{idx + 1}. {q.prompt}</div>
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="font-medium">Q{idx + 1}. {q.prompt}</div>
+                              <span className="text-xs text-muted-foreground">{q.marks ?? 1} marks</span>
+                            </div>
                             <div className="text-muted-foreground">Your answer: {studentAnswer !== -1 ? q.options[studentAnswer] : 'Not answered'}</div>
                             <div className="text-muted-foreground">Correct: {correctIdx !== -1 ? q.options[correctIdx] : '—'}</div>
                           </div>
@@ -159,7 +164,10 @@ const StudentQuizzes = () => {
               <div className="space-y-4 mt-3">
                 {activeQuiz.questions.map((q, idx) => (
                   <div key={idx} className="p-3 rounded-xl border border-border/60">
-                    <div className="font-medium mb-2">Q{idx + 1}. {q.prompt}</div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="font-medium">Q{idx + 1}. {q.prompt}</div>
+                      <span className="text-xs text-muted-foreground">{q.marks ?? 1} marks</span>
+                    </div>
                     <div className="space-y-2">
                       {q.options.map((opt, oi) => (
                         <label key={oi} className="flex items-center gap-2 text-sm">

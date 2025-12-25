@@ -21,7 +21,7 @@ interface QuizFormState {
   assignedTo: string[];
 }
 
-const createEmptyQuestion = (): QuizQuestion => ({ prompt: "Untitled question", options: ["Option A", "Option B"], correctIndex: 0 });
+const createEmptyQuestion = (): QuizQuestion => ({ prompt: "Untitled question", options: ["Option A", "Option B"], correctIndex: 0, marks: 1 });
 
 const TeacherQuizzes = () => {
   const { toast } = useToast();
@@ -78,7 +78,7 @@ const TeacherQuizzes = () => {
 
     setSaving(true);
     try {
-      const payload = { ...form, questions: form.questions.map((q) => ({ ...q, options: q.options.map((o) => o || "(blank)") })) };
+      const payload = { ...form, questions: form.questions.map((q) => ({ ...q, marks: q.marks != null ? Number(q.marks) : 1, options: q.options.map((o) => o || "(blank)") })) };
       console.log('[Save Quiz] Payload:', JSON.stringify(payload, null, 2));
       console.log('[Save Quiz] AssignedTo count:', payload.assignedTo.length);
       
@@ -107,7 +107,7 @@ const TeacherQuizzes = () => {
       title: quiz.title,
       description: quiz.description || "",
       timeLimitSeconds: quiz.timeLimitSeconds || 300,
-      questions: quiz.questions || [createEmptyQuestion()],
+      questions: (quiz.questions || [createEmptyQuestion()]).map((q: any) => ({ ...q, marks: q.marks != null ? q.marks : 1 })),
       assignedTo: (quiz.assignedTo || []).map((s: any) => String(s._id || s)),
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -209,6 +209,21 @@ const TeacherQuizzes = () => {
                     next[qi] = { ...next[qi], prompt: e.target.value };
                     setForm({ ...form, questions: next });
                   }} />
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <span className="text-foreground">Marks:</span>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={0.5}
+                      className="w-28"
+                      value={q.marks ?? 1}
+                      onChange={(e) => {
+                        const next = [...form.questions];
+                        next[qi] = { ...next[qi], marks: Number(e.target.value) };
+                        setForm({ ...form, questions: next });
+                      }}
+                    />
+                  </div>
                   <div className="space-y-2">
                     {q.options.map((opt, oi) => (
                       <div key={oi} className="flex items-center gap-2">
@@ -267,7 +282,7 @@ const TeacherQuizzes = () => {
                   <div>
                     <CardTitle className="text-lg">{quiz.title}</CardTitle>
                     <p className="text-muted-foreground text-sm">{quiz.description || 'No description'}</p>
-                    <div className="text-xs text-muted-foreground mt-1">{quiz.questions?.length || 0} questions · {quiz.timeLimitSeconds}s limit</div>
+                    <div className="text-xs text-muted-foreground mt-1">{quiz.questions?.length || 0} questions · {quiz.timeLimitSeconds}s limit · {(quiz.questions || []).reduce((sum: number, q: any) => sum + (q.marks ?? 1), 0)} marks</div>
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={() => handleEdit(quiz)}>Edit</Button>
@@ -303,7 +318,7 @@ const TeacherQuizzes = () => {
                   {(quiz.attempts || []).map((att: any, idx: number) => (
                     <div key={idx} className="flex flex-wrap gap-3 items-center justify-between text-sm">
                       <div className="font-medium">{att.student?.name || 'Student'}</div>
-                      <div className="text-muted-foreground">Score: {att.score}% ({att.correctCount}/{att.totalQuestions})</div>
+                      <div className="text-muted-foreground">Score: {att.score}% ({att.earnedMarks ?? att.correctCount}/{att.totalMarks ?? att.totalQuestions} marks)</div>
                       <div className="text-muted-foreground">Time: {att.timeTakenSec || 0}s</div>
                       <Badge variant="secondary">Submitted {new Date(att.submittedAt).toLocaleString()}</Badge>
                     </div>
@@ -324,7 +339,8 @@ const TeacherQuizzes = () => {
           <div className="space-y-3 mt-3">
             {form.questions.map((q, idx) => (
               <div key={idx} className="p-3 rounded-xl border border-border/60">
-                <div className="font-medium mb-2">Q{idx + 1}. {q.prompt}</div>
+                <div className="font-medium mb-1">Q{idx + 1}. {q.prompt}</div>
+                <div className="text-xs text-muted-foreground mb-2">Marks: {q.marks ?? 1}</div>
                 <div className="space-y-1 text-sm text-muted-foreground">
                   {q.options.map((opt, oi) => (
                     <div key={oi} className={q.correctIndex === oi ? 'text-primary font-semibold' : ''}>• {opt}</div>

@@ -4,6 +4,7 @@ export interface IQuizQuestion {
   prompt: string;
   options: string[];
   correctIndex: number;
+  marks?: number;
 }
 
 export interface IQuizAttempt {
@@ -11,6 +12,8 @@ export interface IQuizAttempt {
   answers: number[];
   correctCount: number;
   totalQuestions: number;
+  totalMarks: number;
+  earnedMarks: number;
   score: number;
   timeTakenSec?: number;
   submittedAt: Date;
@@ -31,6 +34,7 @@ const QuestionSchema = new Schema<IQuizQuestion>({
   prompt: { type: String, required: true },
   options: [{ type: String, required: true }],
   correctIndex: { type: Number, required: true },
+  marks: { type: Number, default: 1, min: 0 },
 });
 
 const AttemptSchema = new Schema<IQuizAttempt>({
@@ -38,6 +42,8 @@ const AttemptSchema = new Schema<IQuizAttempt>({
   answers: [{ type: Number, required: true }],
   correctCount: { type: Number, required: true },
   totalQuestions: { type: Number, required: true },
+  totalMarks: { type: Number, required: true },
+  earnedMarks: { type: Number, required: true },
   score: { type: Number, required: true },
   timeTakenSec: { type: Number, default: 0 },
   submittedAt: { type: Date, default: Date.now },

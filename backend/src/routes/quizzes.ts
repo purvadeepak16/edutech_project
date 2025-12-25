@@ -13,6 +13,7 @@ const validateQuiz = [
   body('questions.*.prompt').isString().notEmpty(),
   body('questions.*.options').isArray({ min: 2 }),
   body('questions.*.correctIndex').isInt({ min: 0 }),
+  body('questions.*.marks').optional().isFloat({ min: 0 }),
   body('assignedTo').optional().isArray().custom((value) => {
     // Allow empty array or array of valid IDs
     if (Array.isArray(value)) {
@@ -40,6 +41,13 @@ router.post('/', protect, validateQuiz, async (req, res) => {
       }
     }
 
+    const normalizedQuestions = questions.map((q: any) => ({
+      prompt: q.prompt,
+      options: q.options,
+      correctIndex: q.correctIndex,
+      marks: q.marks != null ? Number(q.marks) : 1,
+    }));
+
     // Convert assignedTo strings to proper array if needed
     if (!Array.isArray(assignedTo)) {
       assignedTo = [];
@@ -50,7 +58,7 @@ router.post('/', protect, validateQuiz, async (req, res) => {
       title,
       description,
       timeLimitSeconds: timeLimitSeconds || 300,
-      questions,
+      questions: normalizedQuestions,
       assignedTo,
       createdBy: user._id,
     });
@@ -78,6 +86,7 @@ router.put('/:id', protect, [
   body('questions.*.prompt').optional().isString().notEmpty(),
   body('questions.*.options').optional().isArray({ min: 2 }),
   body('questions.*.correctIndex').optional().isInt({ min: 0 }),
+  body('questions.*.marks').optional().isFloat({ min: 0 }),
   body('assignedTo').optional().isArray(),
 ], async (req, res) => {
   const errors = validationResult(req);
@@ -99,6 +108,15 @@ router.put('/:id', protect, [
           return res.status(400).json({ message: 'correctIndex must be within options length' });
         }
       }
+    }
+
+    if (req.body.questions) {
+      req.body.questions = req.body.questions.map((q: any) => ({
+        prompt: q.prompt,
+        options: q.options,
+        correctIndex: q.correctIndex,
+        marks: q.marks != null ? Number(q.marks) : 1,
+      }));
     }
 
     Object.assign(quiz, req.body);
@@ -149,6 +167,7 @@ router.get('/assigned/list', protect, async (req, res) => {
 
     const result = quizzes.map((quiz: any) => {
       const attempt = (quiz.attempts || []).find((a: any) => String(a.student) === String(user._id));
+      const totalMarks = (quiz.questions || []).reduce((sum: number, q: any) => sum + (q.marks != null ? q.marks : 1), 0);
       const base = {
         _id: quiz._id,
         title: quiz.title,
@@ -156,18 +175,21 @@ router.get('/assigned/list', protect, async (req, res) => {
         timeLimitSeconds: quiz.timeLimitSeconds,
         attempted: Boolean(attempt),
         totalQuestions: quiz.questions.length,
+        totalMarks,
         assignedBy: quiz.createdBy,
       } as any;
 
       if (attempt) {
         base.score = attempt.score;
         base.correctCount = attempt.correctCount;
+        base.earnedMarks = attempt.earnedMarks ?? attempt.correctCount; // fallback for legacy attempts
+        base.totalMarks = attempt.totalMarks ?? totalMarks;
         base.answers = attempt.answers;
         base.submittedAt = attempt.submittedAt;
         base.correctAnswers = quiz.questions.map((q: any) => q.correctIndex);
-        base.questions = quiz.questions.map((q: any) => ({ prompt: q.prompt, options: q.options, correctIndex: q.correctIndex }));
+        base.questions = quiz.questions.map((q: any) => ({ prompt: q.prompt, options: q.options, correctIndex: q.correctIndex, marks: q.marks }));
       } else {
-        base.questions = quiz.questions.map((q: any) => ({ prompt: q.prompt, options: q.options }));
+        base.questions = quiz.questions.map((q: any) => ({ prompt: q.prompt, options: q.options, marks: q.marks }));
       }
 
       return base;
@@ -195,7 +217,7 @@ router.get('/:id', protect, async (req, res) => {
     const attempt = (quiz.attempts || []).find((a: any) => String(a.student) === String(user._id));
 
     if (user.role === 'student' && !attempt) {
-      quiz.questions = quiz.questions.map((q: any) => ({ prompt: q.prompt, options: q.options }));
+      quiz.questions = quiz.questions.map((q: any) => ({ prompt: q.prompt, options: q.options, marks: q.marks }));
     }
 
     res.json(quiz);
@@ -233,17 +255,26 @@ router.post('/:id/submit', protect, body('answers').isArray(), body('timeTakenSe
     const usedTime = Math.min(timeTakenSec, maxTime);
 
     let correctCount = 0;
+    let earnedMarks = 0;
+    let totalMarks = 0;
     quiz.questions.forEach((q: any, idx: number) => {
-      if (answers[idx] === q.correctIndex) correctCount += 1;
+      const questionMarks = q.marks != null ? q.marks : 1;
+      totalMarks += questionMarks;
+      if (answers[idx] === q.correctIndex) {
+        correctCount += 1;
+        earnedMarks += questionMarks;
+      }
     });
     const totalQuestions = quiz.questions.length;
-    const score = Math.round((correctCount / totalQuestions) * 100);
+    const score = totalMarks > 0 ? Math.round((earnedMarks / totalMarks) * 100) : 0;
 
     const attempt = {
       student: user._id,
       answers,
       correctCount,
       totalQuestions,
+      totalMarks,
+      earnedMarks,
       score,
       timeTakenSec: usedTime,
       submittedAt: new Date(),
@@ -257,6 +288,8 @@ router.post('/:id/submit', protect, body('answers').isArray(), body('timeTakenSe
       score,
       correctCount,
       totalQuestions,
+      totalMarks,
+      earnedMarks,
       correctAnswers: quiz.questions.map((q: any) => q.correctIndex),
       answers,
       timeTakenSec: usedTime,
