@@ -671,6 +671,30 @@ const StudentDashboard = () => {
                     )}
                   </TabsContent>
                 </Tabs>
+
+                {/* Study Timer & Stats - moved below My Tasks */}
+                <div className="grid lg:grid-cols-3 gap-6 mt-6">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.25 }}
+                    className="lg:col-span-1 max-w-md w-full mx-auto"
+                  >
+                    <StudyTimer
+                      onSessionComplete={() => setRefreshStudyStats(p => p + 1)}
+                      currentStreak={currentStreak}
+                    />
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="lg:col-span-2"
+                  >
+                    <StudyStats refreshTrigger={refreshStudyStats} />
+                  </motion.div>
+                </div>
               </div>
             </motion.div>
 
@@ -847,31 +871,7 @@ const StudentDashboard = () => {
             </motion.div>
           </div>
 
-          {/* Study Timer & Stats - Better Layout */}
-          <div className="grid lg:grid-cols-3 gap-6">
-            {/* Timer - Left Side (1 column) */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
-              className="lg:col-span-1 max-w-md w-full mx-auto"
-            >
-              <StudyTimer 
-                onSessionComplete={() => setRefreshStudyStats(p => p + 1)} 
-                currentStreak={currentStreak}
-              />
-            </motion.div>
-
-            {/* Stats Cards - Right Side (2 columns) */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="lg:col-span-2"
-            >
-              <StudyStats refreshTrigger={refreshStudyStats} />
-            </motion.div>
-          </div>
+          
         </div>
       </main>
 
