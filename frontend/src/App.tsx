@@ -9,7 +9,8 @@ import StudentDashboard from "./pages/StudentDashboard";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import StudentQuizzes from "./pages/StudentQuizzes";
 import TeacherQuizzes from "./pages/TeacherQuizzes";
-import ZombieGame from "./pages/ZombieGame"; 
+import ZombieGame from "./pages/ZombieGame";
+import StudyLogs from "./pages/StudyLogs";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,7 +28,8 @@ const App = () => (
           <Route path="/student/quizzes" element={<StudentQuizzes />} />
           <Route path="/teacher" element={<TeacherDashboard />} />
           <Route path="/teacher/quizzes" element={<TeacherQuizzes />} />
-          <Route path="/zombie" element={<ZombieGame />} /> 
+          <Route path="/zombie" element={<ZombieGame />} />
+          <Route path="/study-logs" element={<StudyLogs />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

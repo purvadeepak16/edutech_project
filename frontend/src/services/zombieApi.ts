@@ -1,4 +1,10 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/zombie';
+// Build a consistent base URL for the zombie API. If `VITE_API_URL` is provided
+// (e.g. "http://localhost:5000"), append the API mount path so requests
+// go to `${VITE_API_URL}/api/zombie`. Otherwise default to the relative
+// `/api/zombie` path which works with the dev proxy or same-origin hosting.
+const API_BASE = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api/zombie`
+  : '/api/zombie';
 
 export interface Survivor {
   id: number;
