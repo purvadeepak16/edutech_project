@@ -540,7 +540,7 @@ const StudentDashboard = () => {
           </motion.div>
 
           {/* Main Content Grid */}
-          <div className="grid lg:grid-cols-3 gap-6">
+          <div className="grid lg:grid-cols-3 gap-6 items-start">
             {/* Tasks Section */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -703,7 +703,7 @@ const StudentDashboard = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="space-y-6"
+              className="space-y-6 sticky top-28 self-start"
             >
               {/* Connect with Teacher */}
               <div className="glass-card p-6 rounded-2xl">
@@ -748,7 +748,7 @@ const StudentDashboard = () => {
                 ) : acceptedConnections.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-4">No connected teachers yet. Connect with a teacher to get started!</p>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-2 max-h-52 overflow-y-auto">
                     {acceptedConnections.map((conn) => (
                       <motion.div
                         key={conn._id}
@@ -775,7 +775,7 @@ const StudentDashboard = () => {
                       {pendingConnections.length}
                     </span>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 max-h-52 overflow-y-auto">
                     {pendingConnections.map((conn) => {
                       const isResponding = respondingToConnection.has(conn._id);
                       const teacherInitiated = conn.initiatedBy === 'teacher';
