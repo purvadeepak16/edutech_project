@@ -681,6 +681,64 @@ const StudentDashboard = () => {
               transition={{ delay: 0.3 }}
               className="space-y-6"
             >
+              {/* Connect with Teacher */}
+              <div className="glass-card p-6 rounded-2xl">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center">
+                    <Link2 className="w-5 h-5 text-accent" />
+                  </div>
+                  <h3 className="font-heading font-semibold">Connect with Teacher</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Enter your teacher's code to receive assignments directly.
+                </p>
+                <div className="flex gap-2">
+                  <Input placeholder="Enter teacher id/code" className="flex-1" maxLength={64} value={teacherCode} onChange={(e) => setTeacherCode(e.target.value)} />
+                  <Button
+                    onClick={() => sendConnectionRequest(teacherCode)}
+                    disabled={connectingTo.has((teacherCode || '').trim())}
+                    className="btn-gradient-blue"
+                  >
+                    {connectingTo.has((teacherCode || '').trim()) ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Connect'}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Connected Teachers */}
+              <div className="glass-card p-6 rounded-2xl">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-success/20 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-success" />
+                  </div>
+                  <h3 className="font-heading font-semibold">Connected Teachers</h3>
+                  {acceptedConnections.length > 0 && (
+                    <span className="ml-auto text-xs bg-success/20 text-success px-2 py-1 rounded-full font-semibold">
+                      {acceptedConnections.length}
+                    </span>
+                  )}
+                </div>
+                {loadingConnections ? (
+                  <div className="flex items-center justify-center py-6">
+                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                  </div>
+                ) : acceptedConnections.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4">No connected teachers yet. Connect with a teacher to get started!</p>
+                ) : (
+                  <div className="space-y-2">
+                    {acceptedConnections.map((conn) => (
+                      <motion.div
+                        key={conn._id}
+                        layout
+                        className="p-3 bg-card/50 rounded-lg border border-border/50 hover:border-success/30 transition-colors"
+                      >
+                        <p className="font-medium text-sm">{conn.teacher.name}</p>
+                        <p className="text-xs text-muted-foreground">{conn.teacher.email}</p>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* Pending Connection Requests (Sent by Student) */}
               {pendingConnections.length > 0 && (
                 <div className="glass-card p-6 rounded-2xl">
@@ -736,84 +794,6 @@ const StudentDashboard = () => {
                   </div>
                 </div>
               )}
-
-              {/* Connected Teachers */}
-              <div className="glass-card p-6 rounded-2xl">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-success/20 flex items-center justify-center">
-                    <Users className="w-5 h-5 text-success" />
-                  </div>
-                  <h3 className="font-heading font-semibold">Connected Teachers</h3>
-                  {acceptedConnections.length > 0 && (
-                    <span className="ml-auto text-xs bg-success/20 text-success px-2 py-1 rounded-full font-semibold">
-                      {acceptedConnections.length}
-                    </span>
-                  )}
-                </div>
-                {loadingConnections ? (
-                  <div className="flex items-center justify-center py-6">
-                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                  </div>
-                ) : acceptedConnections.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-4">No connected teachers yet. Connect with a teacher to get started!</p>
-                ) : (
-                  <div className="space-y-2">
-                    {acceptedConnections.map((conn) => (
-                      <motion.div
-                        key={conn._id}
-                        layout
-                        className="p-3 bg-card/50 rounded-lg border border-border/50 hover:border-success/30 transition-colors"
-                      >
-                        <p className="font-medium text-sm">{conn.teacher.name}</p>
-                        <p className="text-xs text-muted-foreground">{conn.teacher.email}</p>
-                      </motion.div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Connect with Teacher */}
-              <div className="glass-card p-6 rounded-2xl">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center">
-                    <Link2 className="w-5 h-5 text-accent" />
-                  </div>
-                  <h3 className="font-heading font-semibold">Connect with Teacher</h3>
-                </div>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Enter your teacher's code to receive assignments directly.
-                </p>
-                <div className="flex gap-2">
-                  <Input placeholder="Enter teacher id/code" className="flex-1" maxLength={64} value={teacherCode} onChange={(e) => setTeacherCode(e.target.value)} />
-                  <Button onClick={async () => {
-                    const code = teacherCode?.trim();
-                    if (!code) { toast({ title: 'Enter code', description: 'Please enter teacher code', variant: 'destructive' }); return; }
-                    try {
-                      const token = localStorage.getItem('sc_token');
-                      const res = await fetch('/api/connections/request', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-                        body: JSON.stringify({ teacherId: code }),
-                      });
-                      const data = await res.json();
-                      if (!res.ok) { toast({ title: 'Request failed', description: data?.message || 'Failed to send request', variant: 'destructive' }); return; }
-                      toast({ title: 'Request sent', description: 'Connection request sent to teacher.' });
-                      setTeacherCode('');
-                      // reload connection lists so student sees the pending request they just sent
-                      try {
-                        const [pending, accepted] = await Promise.all([getPendingConnections(), getAcceptedConnections()]);
-                        setPendingConnections(pending);
-                        setAcceptedConnections(accepted);
-                      } catch (err) {
-                        // non-fatal
-                        console.error('Failed to refresh connections after request', err);
-                      }
-                    } catch (err: any) {
-                      toast({ title: 'Network error', description: err?.message || 'Failed to contact server', variant: 'destructive' });
-                    }
-                  }} className="btn-gradient-blue">Connect</Button>
-                </div>
-              </div>
 
               {/* Study Tools */}
               <div className="glass-card p-6 rounded-2xl">
