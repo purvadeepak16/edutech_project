@@ -821,7 +821,7 @@ const StudentDashboard = () => {
 
               {/* Study Tools */}
               <div className="glass-card p-6 rounded-2xl">
-                <h3 className="font-heading font-semibold mb-4">Study Tools</h3>
+                <h3 className="font-heading font-semibold mb-4">Fun+Study Tools</h3>
                 <div className="space-y-3">
                   <button onClick={() => setShowMindMap(true)} className="w-full flex items-center gap-3 p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left">
                     <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
