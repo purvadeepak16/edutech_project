@@ -469,7 +469,7 @@ See [LICENSE](LICENSE) and package.json for full list.
 
 ### 📹 Demo Video
 
-- Demo Video: [Coming Soon]
+- Demo Video:https://drive.google.com/file/d/1o9_TBCFTsjJ9MBqI2M0uLyfJ4ez4qS5g/view?usp=drive_link
 
 ### 🔗 Repository
 
